@@ -38,6 +38,8 @@ func TestRegistry(t *testing.T) {
 	require.NoError(t, err)
 	serviceResourcePath, err := filepath.Abs("../k8s/registry-service.yaml")
 	require.NoError(t, err)
+	ingressResourcePath, err := filepath.Abs("../k8s/registry-ingress.yaml")
+	require.NoError(t, err)
 
 	namespaceName := fmt.Sprintf("wolt-assignment-%s", strings.ToLower(random.UniqueId()))
 	options := k8s.NewKubectlOptions("", "", namespaceName)
@@ -46,9 +48,11 @@ func TestRegistry(t *testing.T) {
 
 	defer k8s.KubectlDelete(t, options, deploymentResourcePath)
 	defer k8s.KubectlDelete(t, options, serviceResourcePath)
+	defer k8s.KubectlDelete(t, options, ingressResourcePath)
 
 	k8s.KubectlApply(t, options, deploymentResourcePath)
 	k8s.KubectlApply(t, options, serviceResourcePath)
+	k8s.KubectlApply(t, options, ingressResourcePath)
 
 	service := k8s.GetService(t, options, "registry-service")
 	require.Equal(t, service.Name, "registry-service")
