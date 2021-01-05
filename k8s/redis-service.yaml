@@ -1,11 +1,11 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: registry-service
+  name: redis-service
 spec:
   selector:
-    app: registry
+    app: redis
   ports:
-  - port: 5000
-    targetPort: 5000
+  - port: 6379
+    targetPort: 6379
   type: ClusterIP
