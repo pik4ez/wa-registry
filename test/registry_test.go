@@ -16,6 +16,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -38,21 +39,26 @@ func TestRegistry(t *testing.T) {
 	defer clean()
 
 	kubernetesResources := []string{
+		"k8s/persistent-volume.yaml",
+
+		"../k8s/redis-deployment.yaml",
+		"../k8s/redis-service.yaml",
+
 		"../k8s/registry-deployment.yaml",
 		"../k8s/registry-service.yaml",
 		"../k8s/registry-ingress.yaml",
-		"../k8s/redis-deployment.yaml",
-		"../k8s/redis-service.yaml",
+		"../k8s/registry-pvc.yaml",
 	}
 	for _, res := range kubernetesResources {
-		clean = applyKubernetesResource(t, kubectlOptions, res)
-		defer clean()
+		applyKubernetesResource(t, kubectlOptions, res)
 	}
+
+	assert.NoDirExists(t, "/tmp/mock-repository-storage/docker")
 
 	service := k8s.GetService(t, kubectlOptions, "registry-service")
 	require.Equal(t, service.Name, "registry-service")
 
-	k8s.WaitUntilServiceAvailable(t, kubectlOptions, "registry-service", 10, 1*time.Second)
+	k8s.WaitUntilServiceAvailable(t, kubectlOptions, "registry-service", 5, 1*time.Second)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(t, err)
@@ -74,6 +80,8 @@ func TestRegistry(t *testing.T) {
 	pushResp, err := cli.ImagePush(ctx, "localhost:5000/hello-world:0.1", opts)
 	require.NoError(t, err)
 	assertNoDockerError(t, pushResp)
+
+	assert.DirExists(t, "/tmp/mock-repository-storage/docker")
 }
 
 func createNamespace(t *testing.T, prefix string) (*k8s.KubectlOptions, func()) {
@@ -86,14 +94,10 @@ func createNamespace(t *testing.T, prefix string) (*k8s.KubectlOptions, func()) 
 	return options, clean
 }
 
-func applyKubernetesResource(t *testing.T, options *k8s.KubectlOptions, relPath string) func() {
+func applyKubernetesResource(t *testing.T, options *k8s.KubectlOptions, relPath string) {
 	absPath, err := filepath.Abs(relPath)
 	require.NoError(t, err)
 	k8s.KubectlApply(t, options, absPath)
-	clean := func() {
-		k8s.KubectlDelete(t, options, absPath)
-	}
-	return clean
 }
 
 func assertNoDockerError(t *testing.T, rd io.Reader) {

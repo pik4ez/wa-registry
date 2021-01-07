@@ -24,3 +24,12 @@ spec:
           value: "redis"
         - name: REGISTRY_REDIS_ADDR
           value: "redis-service:6379"
+        - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
+          value: "/var/lib/registry"
+        volumeMounts:
+        - mountPath: "/var/lib/registry"
+          name: registry-volume
+      volumes:
+      - name: registry-volume
+        persistentVolumeClaim:
+          claimName: registry-pvc
