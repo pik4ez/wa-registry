@@ -1,0 +1,36 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: registry-janitor
+spec:
+  schedule: "* */1 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: registry
+            image: registry:2.7.1
+            imagePullPolicy: IfNotPresent
+            command: ["echo"]
+            args:
+            - /bin/registry
+            - garbage-collect
+            - /janitor-config/janitor-config.yaml
+            volumeMounts:
+            - name: storage
+              mountPath: "/var/lib/registry"
+            - name: config
+              mountPath: "/janitor-config"
+              readOnly: true
+          restartPolicy: Never
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: registry-pvc
+          - name: config
+            configMap:
+              name: janitor-configmap
+              items:
+              - key: "janitor-config.yaml"
+                path: "janitor-config.yaml"
