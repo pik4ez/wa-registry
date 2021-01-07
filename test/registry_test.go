@@ -43,6 +43,8 @@ func TestRegistry(t *testing.T) {
 	kubernetesResources := []string{
 		"k8s/persistent-volume.yaml",
 
+		"k8s/secret-auth.yaml",
+
 		"../k8s/redis-deployment.yaml",
 		"../k8s/redis-service.yaml",
 
@@ -81,6 +83,8 @@ func TestRegistry(t *testing.T) {
 	require.NoError(t, err)
 
 	var authConfig = types.AuthConfig{
+		Username:      "testuser",
+		Password:      "testpassword",
 		ServerAddress: "http://localhost:5000/v2/",
 	}
 	authConfigBytes, _ := json.Marshal(authConfig)

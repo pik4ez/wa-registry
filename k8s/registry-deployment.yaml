@@ -31,9 +31,18 @@ spec:
           value: "true"
         - name: REGISTRY_HTTP_DEBUG_PROMETHEUS_PATH
           value: /metrics
+        - name: REGISTRY_AUTH
+          value: "htpasswd"
+        - name: REGISTRY_AUTH_HTPASSWD_REALM
+          value: "Registry Realm"
+        - name: REGISTRY_AUTH_HTPASSWD_PATH
+          value: "/registry-auth/htpasswd"
         volumeMounts:
         - mountPath: "/var/lib/registry"
-          name: registry-volume
+          name: storage-volume
+        - name: auth-volume
+          mountPath: "/registry-auth"
+          readOnly: true
         livenessProbe:
           httpGet:
             path: /metrics
@@ -49,6 +58,9 @@ spec:
           initialDelaySeconds: 5
           periodSeconds: 10
       volumes:
-      - name: registry-volume
+      - name: storage-volume
         persistentVolumeClaim:
           claimName: registry-pvc
+      - name: auth-volume
+        secret:
+          secretName: registry-secret-auth
