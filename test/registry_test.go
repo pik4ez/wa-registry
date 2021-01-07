@@ -34,38 +34,25 @@ type ErrorDetail struct {
 func TestRegistry(t *testing.T) {
 	t.Parallel()
 
-	deploymentResourcePath, err := filepath.Abs("../k8s/registry-deployment.yaml")
-	require.NoError(t, err)
-	serviceResourcePath, err := filepath.Abs("../k8s/registry-service.yaml")
-	require.NoError(t, err)
-	ingressResourcePath, err := filepath.Abs("../k8s/registry-ingress.yaml")
-	require.NoError(t, err)
-	redisDeploymentResourcePath, err := filepath.Abs("../k8s/redis-deployment.yaml")
-	require.NoError(t, err)
-	redisServiceResourcePath, err := filepath.Abs("../k8s/redis-service.yaml")
-	require.NoError(t, err)
+	kubectlOptions, clean := createNamespace(t, "wolt-assignment")
+	defer clean()
 
-	namespaceName := fmt.Sprintf("wolt-assignment-%s", strings.ToLower(random.UniqueId()))
-	options := k8s.NewKubectlOptions("", "", namespaceName)
-	k8s.CreateNamespace(t, options, namespaceName)
-	defer k8s.DeleteNamespace(t, options, namespaceName)
+	kubernetesResources := []string{
+		"../k8s/registry-deployment.yaml",
+		"../k8s/registry-service.yaml",
+		"../k8s/registry-ingress.yaml",
+		"../k8s/redis-deployment.yaml",
+		"../k8s/redis-service.yaml",
+	}
+	for _, res := range kubernetesResources {
+		clean = applyKubernetesResource(t, kubectlOptions, res)
+		defer clean()
+	}
 
-	defer k8s.KubectlDelete(t, options, deploymentResourcePath)
-	defer k8s.KubectlDelete(t, options, serviceResourcePath)
-	defer k8s.KubectlDelete(t, options, ingressResourcePath)
-	defer k8s.KubectlDelete(t, options, redisDeploymentResourcePath)
-	defer k8s.KubectlDelete(t, options, redisServiceResourcePath)
-
-	k8s.KubectlApply(t, options, deploymentResourcePath)
-	k8s.KubectlApply(t, options, serviceResourcePath)
-	k8s.KubectlApply(t, options, ingressResourcePath)
-	k8s.KubectlApply(t, options, redisDeploymentResourcePath)
-	k8s.KubectlApply(t, options, redisServiceResourcePath)
-
-	service := k8s.GetService(t, options, "registry-service")
+	service := k8s.GetService(t, kubectlOptions, "registry-service")
 	require.Equal(t, service.Name, "registry-service")
 
-	k8s.WaitUntilServiceAvailable(t, options, "registry-service", 10, 1*time.Second)
+	k8s.WaitUntilServiceAvailable(t, kubectlOptions, "registry-service", 10, 1*time.Second)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(t, err)
@@ -87,6 +74,26 @@ func TestRegistry(t *testing.T) {
 	pushResp, err := cli.ImagePush(ctx, "localhost:5000/hello-world:0.1", opts)
 	require.NoError(t, err)
 	assertNoDockerError(t, pushResp)
+}
+
+func createNamespace(t *testing.T, prefix string) (*k8s.KubectlOptions, func()) {
+	namespaceName := fmt.Sprintf("%s-%s", prefix, strings.ToLower(random.UniqueId()))
+	options := k8s.NewKubectlOptions("", "", namespaceName)
+	k8s.CreateNamespace(t, options, namespaceName)
+	clean := func() {
+		k8s.DeleteNamespace(t, options, namespaceName)
+	}
+	return options, clean
+}
+
+func applyKubernetesResource(t *testing.T, options *k8s.KubectlOptions, relPath string) func() {
+	absPath, err := filepath.Abs(relPath)
+	require.NoError(t, err)
+	k8s.KubectlApply(t, options, absPath)
+	clean := func() {
+		k8s.KubectlDelete(t, options, absPath)
+	}
+	return clean
 }
 
 func assertNoDockerError(t *testing.T, rd io.Reader) {
