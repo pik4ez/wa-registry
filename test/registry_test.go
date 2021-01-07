@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 )
@@ -53,12 +55,19 @@ func TestRegistry(t *testing.T) {
 		applyKubernetesResource(t, kubectlOptions, res)
 	}
 
-	assert.NoDirExists(t, "/tmp/mock-repository-storage/docker")
+	storageDir := "/tmp/mock-repository-storage/docker"
+	assert.NoDirExists(t, storageDir)
+	defer os.RemoveAll(storageDir)
 
 	service := k8s.GetService(t, kubectlOptions, "registry-service")
 	require.Equal(t, service.Name, "registry-service")
 
-	k8s.WaitUntilServiceAvailable(t, kubectlOptions, "registry-service", 5, 1*time.Second)
+	k8s.WaitUntilServiceAvailable(t, kubectlOptions, "registry-service", 10, 10*time.Second)
+
+	validateFunc := func(code int, body string) bool {
+		return code == 200
+	}
+	http_helper.HttpGetWithRetryWithCustomValidation(t, "http://localhost:5000/metrics", nil, 10, 20*time.Second, validateFunc)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	require.NoError(t, err)
@@ -81,7 +90,7 @@ func TestRegistry(t *testing.T) {
 	require.NoError(t, err)
 	assertNoDockerError(t, pushResp)
 
-	assert.DirExists(t, "/tmp/mock-repository-storage/docker")
+	assert.DirExists(t, storageDir)
 }
 
 func createNamespace(t *testing.T, prefix string) (*k8s.KubectlOptions, func()) {

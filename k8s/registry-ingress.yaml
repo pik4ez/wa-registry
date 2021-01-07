@@ -15,3 +15,10 @@ spec:
             name: registry-service
             port:
               number: 5000
+      - path: /metrics
+        pathType: Prefix
+        backend:
+          service:
+            name: registry-service
+            port:
+              number: 5001

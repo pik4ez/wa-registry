@@ -26,9 +26,29 @@ spec:
           value: "redis-service:6379"
         - name: REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY
           value: "/var/lib/registry"
+        - name: REGISTRY_HTTP_DEBUG_ADDR
+          value: ":5001"
+        - name: REGISTRY_HTTP_DEBUG_PROMETHEUS_ENABLED
+          value: "true"
+        - name: REGISTRY_HTTP_DEBUG_PROMETHEUS_PATH
+          value: /metrics
         volumeMounts:
         - mountPath: "/var/lib/registry"
           name: registry-volume
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 5001
+          failureThreshold: 1
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 5001
+          failureThreshold: 30
+          initialDelaySeconds: 5
+          periodSeconds: 10
       volumes:
       - name: registry-volume
         persistentVolumeClaim:
