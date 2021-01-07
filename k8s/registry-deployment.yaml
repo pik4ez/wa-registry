@@ -19,6 +19,8 @@ spec:
         - containerPort: 5000
           protocol: TCP
         env:
+        - name: REGISTRY_HTTP_SECRET
+          value: "not_safe_for_production"
         - name: REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR
           value: "redis"
         - name: REGISTRY_REDIS_ADDR
