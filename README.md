@@ -6,6 +6,8 @@ Docker registry with Redis as a cache, persistent volume claim and a garbage col
 
 Infrastracture as code (IAC) is the basic idea. The `terratest` library is the core of the solution. It allows to run Kubernetes cluster, apply the manifests and perform the needed tests on top of that.
 
+Jenkinsfile should be as lightweight as possible. All the routines go to bin/ directory. Different scripts should be self contained. It allows usage of multiple scripting languages and prevents appearance of hidden dependencies.
+
 ## Creating secrets
 
 ```
