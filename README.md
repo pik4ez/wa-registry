@@ -2,10 +2,6 @@
 
 Docker registry with Redis as a cache, persistent volume claim and a garbage collect cron job.
 
-## TODO
-
-* HTTPS.
-
 ## Approach
 
 Infrastracture as code (IAC) is the basic idea. The `terratest` library is the core of the solution. It allows to run Kubernetes cluster, apply the manifests and perform the needed tests on top of that.
