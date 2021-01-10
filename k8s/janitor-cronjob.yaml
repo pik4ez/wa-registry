@@ -3,7 +3,9 @@ kind: CronJob
 metadata:
   name: registry-janitor
 spec:
-  schedule: "* */1 * * *"
+  schedule: "@yearly"
+  # Not supposed to run automatically. To be triggered by Jenkins.
+  suspend: true
   jobTemplate:
     spec:
       template:

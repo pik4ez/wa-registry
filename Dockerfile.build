@@ -1,0 +1,2 @@
+# This is a placeholder for a Jenkins builder Dockerfile.
+# It should contain dependencies to run Python3 job (bin/clean.py).

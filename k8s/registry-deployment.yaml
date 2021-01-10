@@ -39,6 +39,10 @@ spec:
           value: "Registry Realm"
         - name: REGISTRY_AUTH_HTPASSWD_PATH
           value: "/registry-auth/htpasswd"
+        - name: REGISTRY_STORAGE_DELETE_ENABLED
+          value: "true"
+        - name: REGISTRY_STORAGE_MAINTENANCE_READONLY
+          value: "{\"enabled\": false}"
         volumeMounts:
         - mountPath: "/var/lib/registry"
           name: storage-volume
